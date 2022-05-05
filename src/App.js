@@ -2,42 +2,32 @@ import logo from './logo.svg';
 import './App.css';
 import "bootstrap/dist/css/bootstrap.min.css";
 import Autosuggest from 'react-autosuggest';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import axios from 'axios';
 
-const data = [
-  { pais: "Brasil", presidente: "Jair Messias Bolsonaro" },
-  { pais: "México", presidente: "Andrés Manuel López Obrador" },
-  { pais: "Argentina", presidente: "Alberto Ángel Fernández" },
-  { pais: "Colombia", presidente: "Iván Duque Márquez" },
-  { pais: "Chile", presidente: "Gabriel Boric Font" },
-  { pais: "Perú", presidente: "José Pedro Castillo Terrones" },
-  { pais: "Ecuador", presidente: "Guillermo Alberto Santiago Lasso Mendoza" },
-  { pais: "República Dominicana", presidente: "Luis Rodolfo Abinader Corona" },
-  { pais: "Guatemala", presidente: "Alejandro Eduardo Giammattei Falla" },
-  { pais: "Costa Rica", presidente: "Carlos Andrés Alvarado Quesada" },
-];
 
 function App() {
-const[presidentes, setPresidentes]= useState(data);
+  const[data, setData]= useState([]);
+const[personajes, setPersonajes]= useState([]);
 const[value, setValue]= useState("");
-const[presidenteSeleccionado, setPresidenteSeleccionado]= useState({});
+const[personajeSeleccionado, setPersonajeSeleccionado]= useState({});
 
 const onSuggestionsFetchRequested=({value})=>{
-  setPresidentes(filtrarPresidentes(value));
+  setPersonajes(filtrarPersonajes(value));
 }
 
-const filtrarPresidentes=(value)=>{
+const filtrarPersonajes=(value)=>{
   const inputValue=value.trim().toLowerCase();
 const inputLength=inputValue.length;
 
-  var filtrado=data.filter((presidente)=>{
-    var textoCompleto=presidente.presidente + " - " +presidente.pais;
+  var filtrado=data.filter((personaje)=>{
+    var textoCompleto=personaje.name;
 
     if(textoCompleto.toLowerCase()
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
     .includes(inputValue)){
-      return presidente;
+      return personaje;
     }
   });
 
@@ -45,21 +35,21 @@ const inputLength=inputValue.length;
 }
 
 const onSuggestionsClearRequested = () =>{
-  setPresidentes([]);
+  setPersonajes([]);
 }
 
 const getSuggestionValue=(suggestion)=>{
-  return `${suggestion.presidente} - ${suggestion.pais}`;
+  return `${suggestion.name}`;
 }
 
 const renderSuggestion=(suggestion)=>(
-  <div className='sugerencia' onClick={()=>seleccionarPresidente(suggestion)}>
-    {`${suggestion.presidente} - ${suggestion.pais}`}
+  <div className='sugerencia' onClick={()=>seleccionarPersonaje(suggestion)}>
+    {`${suggestion.name}`}
   </div>
 );
 
-const seleccionarPresidente=(presidente)=>{
-  setPresidenteSeleccionado(presidente);
+const seleccionarPersonaje=(personaje)=>{
+  setPersonajeSeleccionado(personaje);
 }
 
 const onChange=(e, {newValue})=>{
@@ -67,26 +57,42 @@ const onChange=(e, {newValue})=>{
 }
 
 const inputProps={
-placeholder:"País o Nombre del Presidente",
+placeholder:"Nombre del Personaje",
 value,
 onChange
 };
 
 const eventEnter=(e)=>{
 if(e.key == "Enter"){
-  var split = e.target.value.split('-');
-  var presidente ={
-    presidente: split[0].trim(),
-    pais: split[1].trim(),
+  var personajeActual = data.filter(p => p.name == e.target.value.trim());
+
+  //console.log(personajeActual);
+  var personaje ={
+    id: personajeActual[0].id,
+    name: personajeActual[0].name,
+    gender: personajeActual[0].gender,
+    normalized_name: personajeActual[0].normalized_name,
   };
-  seleccionarPresidente(presidente);
+  seleccionarPersonaje(personaje);
 }
 }
+
+const obtenerData=()=>{
+  axios.get("https://api.sampleapis.com/simpsons/characters").then(response=>{
+    //console.log(response.data);
+    setPersonajes(response.data);
+    setData(response.data);
+  })
+}
+
+useEffect(()=>{
+obtenerData();
+}, []);
 
   return (
     <div className="App">
      <Autosuggest 
-      suggestions={presidentes}
+      suggestions={personajes}
       onSuggestionsFetchRequested={onSuggestionsFetchRequested}
       onSuggestionsClearRequested={onSuggestionsClearRequested}
       getSuggestionValue={getSuggestionValue}
@@ -95,7 +101,7 @@ if(e.key == "Enter"){
       onSuggestionSelected={eventEnter}
      />
      <br />
-     <button className='btn btn-primary' onClick={()=>console.log(presidenteSeleccionado)}>Checar Estado</button>
+     <button className='btn btn-primary' onClick={()=>console.log(personajeSeleccionado)}>Checar Estado</button>
     </div>
   );
 }
